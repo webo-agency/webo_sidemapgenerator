@@ -4,7 +4,7 @@ if(!defined('_PS_VERSION_')){
     exit;
 }
 
-class webo extends Module
+class webo_SideMapGenerator extends Module
 {
     public function __construct()
     {
@@ -22,6 +22,18 @@ class webo extends Module
 
     public function install() : bool
     {
+        $tab = new Tab();
+        $tab->class_name = 'AdminWeboSideMapGenerator';
+        $tab->module = 'webo_sidemapgenerator';
+        $tab->icon = 'build';
+        $tab->id_parent = (int) Tab::getIdFromClassName('AdminAdvancedParameters');
+        $tab->active = 1;
+        foreach (Language::getLanguages(false) as $lang) {
+            $tab->name[(int) $lang['id_lang']] = 'Side Map Generator';
+        }
+        if(!$tab->save()) {
+            return false;
+        }
         if(parent::install()) {
             return true;
         }
@@ -30,6 +42,12 @@ class webo extends Module
 
     public function uninstall()
     {
+        $tab = new Tab((int)Tab::getIdFromClassName('AdminWeboSideMapGenerator'));
+        if(Validate::isLoadedObject($tab)) {
+            if(!$tab->delete()) {
+                return false;
+            }
+        }
         if(parent::uninstall()) {
             return true;
         }
