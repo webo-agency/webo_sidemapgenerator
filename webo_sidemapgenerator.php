@@ -22,6 +22,11 @@ class webo_SideMapGenerator extends Module
 
     public function install() : bool
     {
+        if(!$this->checkIfGoogleModuleIsActive())
+        {
+            $this->_errors[] = $this->trans('To use this module you must enable Google sitemap', array(), 'Modules.Webo_SideMapGenerator');
+            return false;
+        }
         $tab = new Tab();
         $tab->class_name = 'AdminWeboSideMapGenerator';
         $tab->module = 'webo_sidemapgenerator';
@@ -33,6 +38,14 @@ class webo_SideMapGenerator extends Module
         }
         if(!$tab->save()) {
             return false;
+        }
+        foreach(array(
+                    'WEBO_FILTERSITEMAP_TOKEN' => bin2hex(random_bytes(30)),
+                    'WEBO_FILTERSITEMAP_ACTIVE' => 1
+                ) as $key => $val) {
+            if(!Configuration::deleteByName($key, $val)) {
+                return false;
+            }
         }
         if(parent::install()) {
             return true;
@@ -48,10 +61,29 @@ class webo_SideMapGenerator extends Module
                 return false;
             }
         }
+        foreach(array(
+                    'WEBO_FILTERSITEMAP_TOKEN' => '',
+                    'WEBO_FILTERSITEMAP_ACTIVE' => ''
+                ) as $key => $val) {
+            if(!Configuration::deleteByName($key, $val)) {
+                return false;
+            }
+        }
         if(parent::uninstall()) {
             return true;
         }
         $this->_errors[] = $this->trans('There was an error during the uninstallation. Please see documentation <a href="https://github.com/webo-agency/webo_taghint">here</a>', array(), 'Modules.Webo_RemoveAllItem.Admin');
         return false;
     }
+
+
+    public function checkIfGoogleModuleIsActive() : bool
+    {
+        if(Module::isEnabled('gsitemap'))
+        {
+            return true;
+        }
+        return false;
+    }
+
 }
