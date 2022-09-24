@@ -1,0 +1,22 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+{% block content %}
+    <div class="card">
+        <h3 class="card-header">
+            <i class="material-icons">settings</i> {{ 'Configuration filter sidemap'|trans({}, 'Modules.DemoForms.Admin') }}
+        </h3>
+        <div class="card-block row">
+            <div class="card-text">
+                {{ form_start(mainConfigurationSideMap, {attr : {class: 'form'}, action: 'czvzd'}) }}
+
+                {{ form_end(mainConfigurationSideMap) }}
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-primary float-right" id="save-button">
+                    {{ 'Save'|trans({}, 'Admin.Actions') }}
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

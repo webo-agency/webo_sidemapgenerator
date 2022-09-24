@@ -2,45 +2,71 @@
 
 namespace Prestashop\Module\WeboSidemapGenerator\Form;
 
-use PrestaShop\PrestaShop\Adapter\Feature\CombinationFeature;
-use PrestaShop\PrestaShop\Core\Form\FormDataProviderInterface;
-use Symfony\Component\Form\FormFactoryInterface;
+use PrestaShopBundle\Form\Admin\Type\TranslatorAwareType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 
-final class ConfigurationFormHandler
+class ConfigurationFormHandler extends TranslatorAwareType
 {
-    /**
-     * @var FormFactoryInterface
-     */
-    private $formFactory;
-
-    /**
-     * @var CombinationFeature
-     */
-    private $combinationFeature;
-
-    /**
-     * @var FormDataProviderInterface
-     */
-    private $formDataProvider;
-
-    public function __construct(FormFactoryInterface $formFactory, CombinationFeature $combinationFeature, FormFactoryInterface $formDataProvider)
+    public function __construct(TranslatorInterface $translator, array $locales)
     {
-        $this->formFactory = $formFactory;
-        $this->combinationFeature = $combinationFeature;
-        $this->formDataProvider = $formDataProvider;
+        parent::__construct($translator, $locales);
     }
 
-    public function getForm()
+    public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $formBuilder = $this->formFactory->createBuilder()
-            ->add('settings', SettingsType::class)
-            ->setData($this->formDataProvider->getData());
-        return $formBuilder->setData($formBuilder->getData())->getForm();
+        $builder
+            ->add(
+                'title',
+                TextType::class,
+                [
+                    'label' => 'Title',
+                    'help' => 'Throws error if length is > 50 or text contains <>={}',
+                    'constraints' => [
+                        new TypedRegex([
+                            'type' => 'generic_name',
+                        ]),
+                        new Length([
+                            'max' => 50,
+                        ]),
+                    ],
+                ]
+            );
     }
 
-    public function save(array $data)
-    {
-        return $this->formDataProvider->setData($data);
-    }
+//    /**
+//     * @var FormFactoryInterface
+//     */
+//    private $formFactory;
+//
+//    /**
+//     * @var CombinationFeature
+//     */
+//    private $combinationFeature;
+//
+//    /**
+//     * @var FormDataProviderInterface
+//     */
+//    private $formDataProvider;
+//
+//    public function __construct(FormFactoryInterface $formFactory, CombinationFeature $combinationFeature, FormFactoryInterface $formDataProvider)
+//    {
+//        $this->formFactory = $formFactory;
+//        $this->combinationFeature = $combinationFeature;
+//        $this->formDataProvider = $formDataProvider;
+//    }
+//
+//    public function getForm()
+//    {
+//        $formBuilder = $this->formFactory->createBuilder()
+//            ->add('settings', SettingsType::class)
+//            ->setData($this->formDataProvider->getData());
+//        return $formBuilder->setData($formBuilder->getData())->getForm();
+//    }
+//
+//    public function save(array $data)
+//    {
+//        return $this->formDataProvider->setData($data);
+//    }
 
 }

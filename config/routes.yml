@@ -2,4 +2,4 @@ admin_webo_sidemap:
   path: webosidemapgenerator
   methods: [GET]
   defaults:
-    _controller: 'PrestaShop\WeboSidemapGenerator\Controller\AdminWeboSideMapGeneratorController::demoAction'
+    _controller: 'PrestaShop\WeboSidemapGenerator\Controller\Admin\AdminWeboSideMapGeneratorController::demoAction'

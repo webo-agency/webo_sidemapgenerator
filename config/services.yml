@@ -1,0 +1,11 @@
+services:
+  _defaults:
+    public: true
+
+  prestashop.module.webo_sidemapgenerator.form.settings:
+    class: 'PrestaShop\PrestaShop\Core\Form\Handler'
+    arguments:
+      - '@form.factory'
+      - '@prestashop.core.hook.dispatcher'
+      - 'PrestaShop\WeboSidemapGenerator\Form\Admin\SettingsType'
+      - 'webo_sidemapgenerator'
