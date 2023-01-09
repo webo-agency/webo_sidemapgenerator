@@ -4,14 +4,11 @@ if(!defined('_PS_VERSION_')){
     exit;
 }
 
+use PrestaShop\Module\DemoDoctrine\Entity\Quote;
+use PrestaShop\Module\DemoDoctrine\Entity\QuoteLang;
+
 class webo_SideMapGenerator extends Module
 {
-
-    /** $sitemap_link string */
-    public $sitemap_link = "filter_sitemap.xml";
-
-    /** $gsitemap_table string */
-    public $gsitemap_table = _DB_PREFIX_ ."gsitemap_sitemap";
 
     public function __construct()
     {
@@ -25,6 +22,7 @@ class webo_SideMapGenerator extends Module
         $this->displayName = $this->trans('Webo sidemape generator', array(), 'Modules.Webo_SideMapGenerator');
         $this->description = $this->trans('Thanks to this module you automatically create cache sidemap filter', array(), 'Modules.Webo_SideMapGenerator');
         parent::__construct();
+
     }
 
     public function install() : bool
@@ -38,6 +36,7 @@ class webo_SideMapGenerator extends Module
         $tab->class_name = 'AdminWeboSideMapGenerator';
         $tab->module = 'webo_sidemapgenerator';
         $tab->icon = 'build';
+        $tab->route_name = 'admin_webo_sidemap';
         $tab->id_parent = (int) Tab::getIdFromClassName('AdminAdvancedParameters');
         $tab->active = 1;
         foreach (Language::getLanguages(false) as $lang) {
@@ -47,13 +46,16 @@ class webo_SideMapGenerator extends Module
             return false;
         }
         $this->addVariableToConfigFile();
+        $this->createLinkToGsitemapSitemap();
+        $this->createMainSitemapFile();
+        $this->createFilterSitemapFile($this->createFilterSitemap());
         if(parent::install()) {
             return true;
         }
         return false;
     }
 
-    public function uninstall()
+    public function uninstall():bool
     {
         $tab = new Tab((int)Tab::getIdFromClassName('AdminWeboSideMapGenerator'));
         if(Validate::isLoadedObject($tab)) {
@@ -61,6 +63,9 @@ class webo_SideMapGenerator extends Module
                 return false;
             }
         }
+        $this->deleteLinkFromGsitemapSitemap();
+        $this->createMainSitemapFile();
+        $this->deleteSitemapFilterFile();
         foreach(array(
                     'WEBO_FILTERSITEMAP_TOKEN' => '',
                     'WEBO_FILTERSITEMAP_ACTIVE' => ''
@@ -76,53 +81,45 @@ class webo_SideMapGenerator extends Module
         return false;
     }
 
-
-    public function checkIfGoogleModuleIsActive() : bool
+    /**
+     * @return bool
+     * this function delete filter site map link from gsitemap sitemap table
+     */
+    public function deleteLinkFromGsitemapSitemap(): bool
     {
-        if(Module::isEnabled('gsitemap'))
+        if(Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap`'))
         {
-            return true;
+            return Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link` = "filter_sitemap.xml"') ? true : false;
         }
-        return false;
-    }
-
-    public function addSiteMapLink()
-    {
-        if(!Db::getInstance()->executeS('SELECT * FROM `'. $this->gsitemap_table.'` WHERE `link` = "'. $this->sitemap_link .'" ORDER BY  `link` DESC')) {
-            return Db::getInstance()->execute('INSERT INTO `' . $this->gsitemap_table. '` (`link`, id_shop) VALUES (\'' . $this->sitemap_link . '\', ' . (int)$this->context->shop->id . ')') ? true : false;
-        }else {
-            return true;
-        }
-        return false;
-    }
-
-    public function deleteSiteMapLink()
-    {
-        if(Db::getInstance()->executeS('SELECT * FROM `'. $this->gsitemap_table.'` WHERE `link` = "'. $this->sitemap_link .'" ORDER BY  `link` ASC')) {
-           return Db::getInstance()->execute('DELETE FROM `'. $this->gsitemap_table.'` WHERE link = "'. $this->sitemap_link .'"') ? true : false;
-        } else {
-            return true;
-        }
-        return false;
-    }
-
-    public function createMainSitemapFile() : bool
-    {
-        $sitemaps = Db::getInstance()->ExecuteS('SELECT `link` FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE id_shop = ' . $this->context->shop->id);
-        if (!$sitemaps) {
-            return false;
-        }
-        $xml = '<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></sitemapindex>';
-        $xml_feed = new SimpleXMLElement($xml);
-        foreach ($sitemaps as $sitemaps) {
-            $sitemap = $xml_feed->addChild('sitemap');
-            $sitemap->addChild('loc', $this->context->link->getBaseLink() . $sitemaps['link']);
-            $sitemap->addChild('lastmod', date('c'));
-        }
-        file_put_contents($this->normalizeDirectory(_PS_ROOT_DIR_).$this->context->shop->id. '_index_sitemap.xml', $xml_feed->asXML());
         return true;
     }
 
+    /**
+     * @return bool
+     * this function insert gsitemap link into gsitemap sitemap table
+     */
+    public function createLinkToGsitemapSitemap():bool
+    {
+        if(!Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link`="filter_sitemap.xml"')) {
+            return Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'gsitemap_sitemap` (`link`, `id_shop`) VALUES ("filter_sitemap.xml", ' . (int)$this->context->shop->id . ')') ? true : false;
+        }
+        return true;
+    }
+
+
+    /**
+     * @return array
+     * this function is get variable from category lang
+     */
+    public function returnCategoryLang($category_lang): array
+    {
+        return Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'category_lang` WHERE `id_category`='.$category_lang.' ORDER BY `id_category` DESC');
+    }
+
+    /**
+     * @return string
+     * this function normalized directory
+     */
     protected function normalizeDirectory($directory) : string
     {
         $last = $directory[Tools::strlen($directory) - 1];
@@ -131,23 +128,157 @@ class webo_SideMapGenerator extends Module
             '\\',
         ))) {
             $directory[Tools::strlen($directory) - 1] = DIRECTORY_SEPARATOR;
-
             return $directory;
         }
         $directory .= DIRECTORY_SEPARATOR;
         return $directory;
     }
 
-    public function createFilterSitemap()
+    /**
+     * @return bool
+     * this function is action cron
+     */
+    public function cronAction() : bool
     {
-        if($this->addSiteMapLink() == false)
-        {
+        if($this->checkIfGoogleModuleIsActive()) {
+            if (Configuration::get('WEBO_FILTERSITEMAP_ACTIVE') == '1') {
+                if ($this->checkIfGoogleModuleIsActive()) {
+                    $this->createLinkToGsitemapSitemap();
+                    $this->createMainSitemapFile();
+                    $this->createFilterSitemapFile($this->createFilterSitemap());
+                    return true;
+                }
+                return false;
+            } else {
+                $this->deleteLinkFromGsitemapSitemap();
+                $this->createMainSitemapFile();
+                $this->deleteSitemapFilterFile();
+            }
+            return false;
+        }else {
+            Configuration::updateValue('WEBO_FILTERSITEMAP_ACTIVE', '0');
+            $this->deleteLinkFromGsitemapSitemap();
+            $this->createMainSitemapFile();
+            $this->deleteSitemapFilterFile();
             return false;
         }
-        return "hahah";
     }
 
-    public function addVariableToConfigFile()
+    /**
+     * @return bool
+     * this function delete sitemap filter file
+     */
+    public function deleteSitemapFilterFile()
+    {
+        if(file_exists($this->normalizeDirectory(_PS_ROOT_DIR_). "filter_sitemap.xml")) {
+            return unlink($this->normalizeDirectory(_PS_ROOT_DIR_) . "filter_sitemap.xml") ? true : false;
+        }
+    }
+
+    /**
+     * @return array
+     * this function return array all gsitemap sitemap file link
+     */
+    public function returnGsitemapSitemapLink(): array
+    {
+        return Db::getInstance()->executeS('SELECT `link` FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` ORDER BY `link` DESC');
+    }
+
+    /**
+     * @return bool
+     * this function create/update index sitemap file
+     */
+    public function createMainSitemapFile() : bool
+    {
+        if($this->returnGsitemapSitemapLink()) {
+            $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_). $this->context->shop->id ."_index_sitemap.xml", "wb");
+            fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>'. PHP_EOL .'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+            foreach ($this->returnGsitemapSitemapLink() as $sitemaps) {
+                fwrite($create, '<sitemap>'. PHP_EOL .'<loc>'.$this->context->link->getBaseLink() . $sitemaps['link'].'</loc>'. PHP_EOL .'<lastmod>'.date('c').'</lastmod>'. PHP_EOL .'</sitemap>'. PHP_EOL);
+            }
+            fwrite($create, '</sitemapindex>');
+            fclose($create);
+            return true;
+        }
+        return true;
+    }
+
+    /**
+     * @return bool
+     * this function create filter_sitemap.xml file with all filters
+     */
+    public function createFilterSitemapFile($array) : bool
+    {
+        $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_). "filter_sitemap.xml", "wb");
+        fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>'. PHP_EOL .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'. PHP_EOL);
+        foreach($array as $arrays)
+        {
+            fwrite($create, '<url>' . PHP_EOL. '<loc>'. $arrays .'</loc>'. PHP_EOL. '<lastmod>'. date('c',strtotime(time())) .'</lastmod>'. PHP_EOL.'<changefreq>daily</changefreq>'. PHP_EOL.'<priority>0.5</priority>'. PHP_EOL.'</url>'. PHP_EOL);
+        }
+        fwrite($create, '</urlset>');
+        fclose($create);
+        return true;
+    }
+
+    /**
+     * @return array
+     * this function create sitemap
+     */
+    public function createFilterSitemap() : array
+    {
+        $array = array();
+        foreach($this->returnCategoryProduct() as $category_product)
+        {
+            foreach ($this->returnCategoryLang($category_product['id_category']) as $category_lang)
+            {
+                foreach($this->returnLayeredProductAttribute($category_product['id_product']) as $layered_product_attribute)
+                {
+                    $array[] = $this->returnUrlString($category_lang['id_lang'], $category_lang['id_category'], $category_lang['link_rewrite'], $this->returnAttributeGroupLang($layered_product_attribute['id_attribute_group'], $category_lang['id_lang'])['name'], $this->returnAttributeLang($layered_product_attribute['id_attribute'], $category_lang['id_lang'])['name']);
+                }
+            }
+        }
+        return $array;
+    }
+
+    /**
+     * this function return name attribute group lang
+     */
+    public function returnAttributeGroupLang($id_attribute_group, $id_lang)
+    {
+        return Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'attribute_group_lang` WHERE id_attribute_group = '. $id_attribute_group.' AND id_lang = '. $id_lang);
+    }
+
+    /**
+     * this function return name attribute lang table
+     */
+    public function returnAttributeLang($id_attribute, $id_lang)
+    {
+        return Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'attribute_lang` WHERE id_attribute = '. $id_attribute.' AND id_lang = '. $id_lang);
+    }
+
+    /**
+     * @return array
+     * this function return array layered_product_attribute table
+     */
+    public function returnLayeredProductAttribute($id_product): array
+    {
+        return Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'layered_product_attribute` WHERE `id_product` = '. $id_product .' ORDER BY id_attribute');
+    }
+
+    /**
+     * @return string
+     * this function return url string
+     */
+    public function returnUrlString($id_lang, $id_category, $link_rewrite,$filter_group_name, $filter_name): string
+    {
+        return _PS_BASE_URL_.'/'.Language::getIsoById((int)$id_lang).'/'. $id_category .'-'.$link_rewrite.'?q='. preg_replace('/\s+/', '+',$filter_group_name).'-'.preg_replace('/\s+/', '+',$filter_name);
+    }
+
+    /**
+     * @return bool
+     * this function add config variable to settings
+     */
+    public function addVariableToConfigFile(): bool
     {
         $variable = "";
         foreach(array(
@@ -163,6 +294,34 @@ class webo_SideMapGenerator extends Module
             return true;
         }
         return false;
+    }
+
+    /**
+     * @return array
+     * this function return all product category
+     */
+    public function returnProductCategory($variable) : array
+    {
+        return Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'category_product` WHERE `id_category`= '. $variable.' ORDER BY `id_category`');
+    }
+
+
+    /**
+     * @return array
+     * this function array all category product
+     */
+    public function returnCategoryProduct():array
+    {
+        return Db::getInstance()->executeS('SELECT * FROM `'. _DB_PREFIX_ .'category_product` ORDER BY `id_category` DESC');
+    }
+
+    /**
+     * @return bool
+     * this functiopn check if google sitemap is active
+     */
+    public function checkIfGoogleModuleIsActive() : bool
+    {
+        return Module::isEnabled('gsitemap')? true : false;
     }
 
 }

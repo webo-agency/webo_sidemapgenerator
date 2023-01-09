@@ -2,22 +2,25 @@
 
 namespace PrestaShop\WeboSidemapGenerator\Controller\Admin;
 
-use PrestaShop\PrestaShop\Core\Form\FormHandlerInterface;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
-use PrestaShop\WeboSidemapGenerator\Form\Admin\SettingsType;
+use PrestaShop\WeboSidemapGenerator\Form\ConfigurationType;
+use Symfony\Component\HttpFoundation\Request;
 
 class AdminWeboSideMapGeneratorController extends FrameworkBundleAdminController
 {
-    public function demoAction()
-    {
-        $test = $this->getSidemapSettings()->getForm();
-        return $this->render('@Modules/webo_sidemapgenerator/templates/admin/DisplayAdminSettings.html.twig', [
-            'mainConfigurationSideMap' => $test->createView()
-        ]);
-    }
 
-    public function getSidemapSettings(): FormHandlerInterface
+    public function configurationAction(Request $request)
     {
-        return $this->get('prestashop.module.webo_sidemapgenerator.form.settings');
+        $form = $this->createForm(ConfigurationType::class);
+//        $form->handleRequest($request);
+//        if($form->isSubmitted() && $form->isValid() && !is_null($form->getData()['active_module']))
+//        {
+//            Configuration::updateValue('WEBO_FILTERSITEMAP_ACTIVE', $form->getData()['active_module']);
+//            $this->addFlash('success', $this->trans('no co ty.', 'Modules.Demodoctrine.Admin'));
+//        }
+        return $this->render('@Modules/webo_sidemapgenerator/templates/admin/DisplayAdminSettings.html.twig', [
+            'mainConfigurationSideMap' => $form->createView(),
+            'requestes' => $request->get('active')
+        ]);
     }
 }

@@ -1,22 +1,29 @@
 {% extends '@PrestaShop/Admin/layout.html.twig' %}
 {% block content %}
-    <div class="card">
-        <h3 class="card-header">
-            <i class="material-icons">settings</i> {{ 'Configuration filter sidemap'|trans({}, 'Modules.DemoForms.Admin') }}
-        </h3>
-        <div class="card-block row">
-            <div class="card-text">
-                {{ form_start(mainConfigurationSideMap, {attr : {class: 'form'}, action: 'czvzd'}) }}
-
-                {{ form_end(mainConfigurationSideMap) }}
+    {{ requestes }}
+    {{ form_start(mainConfigurationSideMap, {attr : {class: 'form'}, action: path('admin_webo_sidemap')}) }}
+    <div class="row justify-content-center">
+        {% block perfs_form_smarty_cache %}
+            <div class="col">
+                <div class="card">
+                    <h3 class="card-header">
+                        <i class="material-icons">business_center</i> {{ 'Configuration filter sidemap'|trans }}
+                    </h3>
+                    <div class="card-block row">
+                        <div class="card-text">
+                            {% block perfs_form_smarty_cache_form %}
+                                {{ form_widget(mainConfigurationSideMap) }}
+                            {% endblock %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-end">
+                            <button class="btn btn-primary" id="submitconfigsitemap">{{ 'Save'|trans({}, 'Admin.Actions') }}</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="card-footer">
-            <div class="d-flex justify-content-end">
-                <button class="btn btn-primary float-right" id="save-button">
-                    {{ 'Save'|trans({}, 'Admin.Actions') }}
-                </button>
-            </div>
-        </div>
+        {% endblock %}
     </div>
+    {{ form_end(mainConfigurationSideMap) }}
 {% endblock %}
