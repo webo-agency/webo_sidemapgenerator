@@ -1,0 +1,24 @@
+{
+  "name": "prestashop/webo_sidemapgenerator",
+  "type": "prestashop-module",
+  "license": "GPL-3.0-or-later",
+  "minimum-stability": "stable",
+  "config": {
+    "prepend-autoloader": false
+  },
+  "authors": [
+    {
+      "name": "Webo.Agency"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "PrestaShop\\WeboSidemapGenerator\\": "src/"
+    },
+    "classmap": [
+      "webo_sidemapgenerator.php"
+    ]
+  },
+  "require": {
+  }
+}

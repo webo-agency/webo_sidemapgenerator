@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  prestashop-sidemap:
+    image: prestashop/prestashop:1.7.8.6-apache
+    ports:
+      - 8008:80
+      - 9005:9000
+    depends_on:
+      - mariadb-sidemap
+    volumes:
+      - prestashop-sidemap:/var/www/html
+      - ./:/var/www/html/modules/webo_sidemapgenerator
+    environment:
+      - PS_DEV_MODE=1
+      - DB_SERVER=mariadb-sidemap
+      - DB_USER=root
+      - DB_PASSWD=root
+      - DB_NAME=prestashop
+      - PS_FOLDER_INSTALL=installDirHasToBeRenamed
+      - PS_FOLDER_ADMIN=admin1234
+      - PS_LANGUAGE=pl
+      - ADMIN_MAIL=support@webo.agency
+      - ADMIN_PASSWD=password
+      - PS_INSTALL_AUTO=1
+      - PS_DOMAIN=localhost:8008
+
+  mariadb-sidemap:
+    image: mariadb:10.8.3
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=prestashop
+    volumes:
+      - db-sidemap:/var/lib/mysql
+
+  phpmyadmin-sidemap:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - mariadb-sidemap
+    ports:
+      - 84:80
+    environment:
+      - PMA_HOST=mariadb-sidemap
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+
+  openssh-server-sidemap:
+    image: lscr.io/linuxserver/openssh-server:latest
+    container_name: openssh-server-sidemap
+    hostname: openssh-server #optional
+    environment:
+      - PUID=33
+      - PGID=33
+      - TZ=Europe/London
+      - SUDO_ACCESS=true #optional
+      - PASSWORD_ACCESS=true #optional
+      - USER_PASSWORD=password #optional
+      - USER_NAME=prestashop #optional
+    volumes:
+      - config-sidemap:/config
+      - prestashop-sidemap:/home/prestashop
+    ports:
+      - 2225:2222
+    restart: unless-stopped
+
+volumes:
+  prestashop-sidemap:
+  config-sidemap:
+  db-sidemap:
