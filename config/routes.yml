@@ -3,9 +3,3 @@ admin_webo_sidemap:
   methods: [GET, POST]
   defaults:
     _controller: 'PrestaShop\WeboSidemapGenerator\Controller\Admin\AdminWeboSideMapGeneratorController::configurationAction'
-
-admin_webo_sidemap_post:
-  path: webosidemappost
-  methods: [POST]
-  defaults:
-    _controller: 'PrestaShop\WeboSidemapGenerator\Controller\Admin\AdminWeboSideMapGeneratorController::postConfigurationAction'

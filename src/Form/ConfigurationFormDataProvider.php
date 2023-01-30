@@ -7,7 +7,7 @@ namespace PrestaShop\WeboSidemapGenerator\Form;
 use PrestaShop\PrestaShop\Core\Configuration\DataConfigurationInterface;
 use PrestaShop\PrestaShop\Core\Form\FormDataProviderInterface;
 
-class ConfigurationDataFormDataProvider implements FormDataProviderInterface
+class ConfigurationFormDataProvider implements FormDataProviderInterface
 {
     /**
      * @var DataConfigurationInterface

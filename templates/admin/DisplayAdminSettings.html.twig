@@ -1,6 +1,6 @@
 {% extends '@PrestaShop/Admin/layout.html.twig' %}
 {% block content %}
-    {{ requestes }}
+{#    {{ requestes }}#}
     {{ form_start(mainConfigurationSideMap, {attr : {class: 'form'}, action: path('admin_webo_sidemap')}) }}
     <div class="row justify-content-center">
         {% block perfs_form_smarty_cache %}
@@ -26,4 +26,26 @@
         {% endblock %}
     </div>
     {{ form_end(mainConfigurationSideMap) }}
+    {% if check_if_module_active == "1" %}
+        <div class="row justify-content-center">
+            <div class="col">
+                <div class="card">
+                    <h3 class="card-header">
+                        <i class="material-icons">business_center</i> {{ 'Information filter sidemap'|trans }}
+                    </h3>
+                    <div class="card-block row">
+                        <div class="card-text">
+                            <div class="p-4">Your module is <div class="text-success d-inline font-weight-bold">active</div>, to use this module you must use cron, <br> use this url link to automatically generate your XML sitemaps.<p class="mt-1"><a href="javascript:void(0)" onclick="copyUrl()">{{ cron_link }}</a></p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            function copyUrl() {
+                navigator.clipboard.writeText("{{ cron_link }}");
+                $.growl.notice({ title: "", message: "Cron url was copy" });
+            }
+        </script>
+    {% endif %}
 {% endblock %}

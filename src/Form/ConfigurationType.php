@@ -12,34 +12,6 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class ConfigurationType extends TranslatorAwareType
 {
-    /**
-     * @var bool
-     */
-    private $isMultistoreUsed;
-
-    /**
-     * @param TranslatorInterface $translator
-     * @param array $locales
-     * @param bool $isMultistoreUsed
-     */
-    public function __construct(
-        TranslatorInterface $translator,
-        array $locales,
-        bool $isMultistoreUsed
-    ) {
-        parent::__construct($translator, $locales);
-
-        $this->isMultistoreUsed = $isMultistoreUsed;
-    }
-//    /**
-//     * TranslatorInterface $translator
-//     */
-//    private $translator;
-//
-//    public function __construct(TranslatorInterface $translator, array $locales)
-//    {
-//        parent::__construct($translator, $locales);
-//    }
 
     public function buildForm(FormBuilderInterface $builder, array $options) : void
     {
