@@ -68,7 +68,8 @@ class webo_SideMapGenerator extends Module
         $this->deleteSitemapFilterFile();
         foreach(array(
                     'WEBO_FILTERSITEMAP_TOKEN' => '',
-                    'WEBO_FILTERSITEMAP_ACTIVE' => ''
+                    'WEBO_FILTERSITEMAP_ACTIVE' => '',
+                    'WEBO_FILTERSITEMAP_SITEMAPINDEX' => '',
                 ) as $key => $val) {
             if(!Configuration::deleteByName($key, $val)) {
                 return false;
@@ -87,9 +88,10 @@ class webo_SideMapGenerator extends Module
      */
     public function deleteLinkFromGsitemapSitemap(): bool
     {
-        if(Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap`'))
-        {
-            return Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link` = "filter_sitemap.xml"') ? true : false;
+        if(!$this->checkIfFilterIsIndexed()) {
+            if (Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap`')) {
+                return Db::getInstance()->execute('DELETE FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link` = "filter_sitemap.xml"') ? true : false;
+            }
         }
         return true;
     }
@@ -100,8 +102,10 @@ class webo_SideMapGenerator extends Module
      */
     public function createLinkToGsitemapSitemap():bool
     {
-        if(!Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link`="filter_sitemap.xml"')) {
-            return Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'gsitemap_sitemap` (`link`, `id_shop`) VALUES ("filter_sitemap.xml", ' . (int)$this->context->shop->id . ')') ? true : false;
+        if(!$this->checkIfFilterIsIndexed()) {
+            if (!Db::getInstance()->executeS('SELECT * FROM `' . _DB_PREFIX_ . 'gsitemap_sitemap` WHERE `link`="filter_sitemap.xml"')) {
+                return Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'gsitemap_sitemap` (`link`, `id_shop`) VALUES ("filter_sitemap.xml", ' . (int)$this->context->shop->id . ')') ? true : false;
+            }
         }
         return true;
     }
@@ -190,15 +194,17 @@ class webo_SideMapGenerator extends Module
      */
     public function createMainSitemapFile() : bool
     {
-        if($this->returnGsitemapSitemapLink()) {
-            $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_). $this->context->shop->id ."_index_sitemap.xml", "wb");
-            fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>'. PHP_EOL .'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-            foreach ($this->returnGsitemapSitemapLink() as $sitemaps) {
-                fwrite($create, '<sitemap>'. PHP_EOL .'<loc>'.$this->context->link->getBaseLink() . $sitemaps['link'].'</loc>'. PHP_EOL .'<lastmod>'.date('c').'</lastmod>'. PHP_EOL .'</sitemap>'. PHP_EOL);
+        if(!$this->checkIfFilterIsIndexed()) {
+            if ($this->returnGsitemapSitemapLink()) {
+                $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_) . $this->context->shop->id . "_index_sitemap.xml", "wb");
+                fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL . '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+                foreach ($this->returnGsitemapSitemapLink() as $sitemaps) {
+                    fwrite($create, '<sitemap>' . PHP_EOL . '<loc>' . $this->context->link->getBaseLink() . $sitemaps['link'] . '</loc>' . PHP_EOL . '<lastmod>' . date('c') . '</lastmod>' . PHP_EOL . '</sitemap>' . PHP_EOL);
+                }
+                fwrite($create, '</sitemapindex>');
+                fclose($create);
+                return true;
             }
-            fwrite($create, '</sitemapindex>');
-            fclose($create);
-            return true;
         }
         return true;
     }
@@ -209,15 +215,14 @@ class webo_SideMapGenerator extends Module
      */
     public function createFilterSitemapFile($array) : bool
     {
-        $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_). "filter_sitemap.xml", "wb");
-        fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>'. PHP_EOL .'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">'. PHP_EOL);
-        foreach($array as $arrays)
-        {
-            fwrite($create, '<url>' . PHP_EOL. '<loc>'. $arrays .'</loc>'. PHP_EOL. '<lastmod>'. date('c',strtotime(time())) .'</lastmod>'. PHP_EOL.'<changefreq>daily</changefreq>'. PHP_EOL.'<priority>0.5</priority>'. PHP_EOL.'</url>'. PHP_EOL);
-        }
-        fwrite($create, '</urlset>');
-        fclose($create);
-        return true;
+            $create = fopen($this->normalizeDirectory(_PS_ROOT_DIR_) . "filter_sitemap.xml", "wb");
+            fwrite($create, '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . PHP_EOL);
+            foreach ($array as $arrays) {
+                fwrite($create, '<url>' . PHP_EOL . '<loc>' . $arrays . '</loc>' . PHP_EOL . '<lastmod>' . date('c', strtotime(time())) . '</lastmod>' . PHP_EOL . '<changefreq>daily</changefreq>' . PHP_EOL . '<priority>0.5</priority>' . PHP_EOL . '</url>' . PHP_EOL);
+            }
+            fwrite($create, '</urlset>');
+            fclose($create);
+            return true;
     }
 
     /**
@@ -283,7 +288,8 @@ class webo_SideMapGenerator extends Module
         $variable = "";
         foreach(array(
                     'WEBO_FILTERSITEMAP_TOKEN' => bin2hex(random_bytes(30)),
-                    'WEBO_FILTERSITEMAP_ACTIVE' => 1
+                    'WEBO_FILTERSITEMAP_ACTIVE' => 1,
+                    'WEBO_FILTERSITEMAP_SITEMAPINDEX' => 0,
                 ) as $key => $val) {
             if(!Configuration::updateValue($key, $val)) {
                 $variable = "1";
@@ -321,7 +327,16 @@ class webo_SideMapGenerator extends Module
      */
     public function checkIfGoogleModuleIsActive() : bool
     {
-        return Module::isEnabled('gsitemap')? true : false;
+        return $this->checkIfFilterIsIndexed() ? true : Module::isEnabled('gsitemap') ? true : false;
+    }
+
+    /**
+     * @return bool
+     * this function check if
+     */
+    public function checkIfFilterIsIndexed():bool
+    {
+        return Configuration::get('WEBO_FILTERSITEMAP_SITEMAPINDEX') == 0 ? true : false;
     }
 
 }
